@@ -6,9 +6,7 @@
   <title>BST Visualizer</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -37,7 +35,7 @@
 
     #engineStatus {
       margin-top: 10px;
-      color: #999999;
+      color: #999;
       font-size: 12px;
     }
 
@@ -66,8 +64,18 @@
       user-select: none;
     }
 
-    #treeSvg.dragging {
+    #treeSvg.dragging,
+    #treeSvg.dragging .node {
       cursor: grabbing;
+    }
+
+    .node {
+      cursor: pointer;
+    }
+
+    .node:hover circle {
+      stroke: #ffaaaa;
+      stroke-width: 3;
     }
 
     #emptyMessage {
@@ -77,22 +85,20 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      color: #777777;
+      color: #777;
       text-align: center;
       line-height: 1.8;
       pointer-events: none;
     }
 
-    #emptyMessage[hidden] {
-      display: none;
-    }
+    #emptyMessage[hidden] { display: none; }
 
     .navigation-hint {
       margin: 10px 0 0;
-      color: #777777;
+      color: #888;
       font-size: 12px;
       text-align: center;
-      line-height: 1.6;
+      line-height: 1.8;
     }
 
     .tree-info {
@@ -101,13 +107,11 @@
       flex-wrap: wrap;
       gap: 24px;
       margin-top: 14px;
-      color: #999999;
+      color: #999;
       font-size: 13px;
     }
 
-    .tree-info strong {
-      color: #79e0ad;
-    }
+    .tree-info strong { color: #79e0ad; }
 
     .inorder {
       max-width: 900px;
@@ -120,13 +124,13 @@
 
     .inorder-label {
       margin-bottom: 8px;
-      color: #999999;
+      color: #999;
     }
 
     #inorderValue {
       max-height: 80px;
       overflow: auto;
-      color: #cccccc;
+      color: #ccc;
       font-family: monospace;
       line-height: 1.8;
       overflow-wrap: anywhere;
@@ -150,7 +154,7 @@
     }
 
     .slider-heading label {
-      color: #bbbbbb;
+      color: #bbb;
       font-size: 14px;
     }
 
@@ -175,7 +179,7 @@
       display: flex;
       justify-content: space-between;
       margin-top: 8px;
-      color: #777777;
+      color: #777;
       font-size: 12px;
     }
 
@@ -194,15 +198,13 @@
       border: 1px solid #414141;
       border-radius: 9px;
       background: #242424;
-      color: #eeeeee;
+      color: #eee;
       font: inherit;
       font-size: 14px;
       cursor: pointer;
     }
 
-    button:hover {
-      background: #333333;
-    }
+    button:hover { background: #333; }
 
     button:disabled {
       opacity: 0.4;
@@ -223,9 +225,7 @@
       font-weight: bold;
     }
 
-    #addButton:hover {
-      background: #9cebc3;
-    }
+    #addButton:hover { background: #9cebc3; }
 
     #deleteButton {
       border-color: #794747;
@@ -239,7 +239,7 @@
 
     .hint {
       margin: 14px 0 0;
-      color: #777777;
+      color: #777;
       text-align: center;
       font-size: 12px;
     }
@@ -247,28 +247,17 @@
     #message {
       min-height: 42px;
       margin: 18px 0 0;
-      color: #aaaaaa;
+      color: #aaa;
       font-size: 13px;
       text-align: center;
       line-height: 1.6;
     }
 
     @media (max-width: 480px) {
-      h1 {
-        font-size: 22px;
-      }
-
-      .visualization {
-        padding: 0 12px;
-      }
-
-      .controls {
-        padding: 18px;
-      }
-
-      button {
-        flex-basis: 100%;
-      }
+      h1 { font-size: 22px; }
+      .visualization { padding: 0 12px; }
+      .controls { padding: 18px; }
+      button { flex-basis: 100%; }
     }
   </style>
 </head>
@@ -277,9 +266,7 @@
   <div class="app">
     <header>
       <h1>BST VISUALIZER</h1>
-      <div id="engineStatus" role="status">
-        C++ 엔진 로딩 중…
-      </div>
+      <div id="engineStatus" role="status">C++ 엔진 로딩 중…</div>
     </header>
 
     <main class="visualization">
@@ -301,8 +288,8 @@
       </div>
 
       <p class="navigation-hint" id="navigationHelp">
-        휠: 확대·축소 · 좌클릭 드래그: 이동 · 더블클릭: 전체 보기
-        <br>
+        휠: 확대·축소 · 좌클릭 드래그: 이동<br>
+        노드 더블클릭: 삭제 · 빈 공간 더블클릭: 전체 보기<br>
         트리 영역 선택 후 방향키: 이동 · + / −: 확대·축소 · Home: 전체 보기
       </p>
 
@@ -344,11 +331,9 @@
         <button type="button" id="addButton" disabled>
           Add Node
         </button>
-
         <button type="button" id="deleteButton" disabled>
           Delete Node
         </button>
-
         <button type="button" id="randomAddButton" disabled>
           Add Random Node
         </button>
@@ -383,17 +368,10 @@
     let engine = null;
     let lastAddedKey = null;
     let currentNodes = [];
-
-    // 화면 이동량과 확대 배율
-    const camera = {
-      x: 0,
-      y: 0,
-      scale: 1
-    };
-
-    // 직접 이동하거나 확대하기 전까지는 트리에 자동으로 맞춥니다.
     let autoFit = true;
     let drag = null;
+
+    const camera = { x: 0, y: 0, scale: 1 };
 
     function makeSvgElement(name, attributes, text) {
       const element = document.createElementNS(SVG_NS, name);
@@ -407,6 +385,11 @@
       }
 
       return element;
+    }
+
+    function selectKey(key) {
+      slider.value = key;
+      keyValue.value = key;
     }
 
     function applyCamera() {
@@ -425,7 +408,7 @@
       const width = treeSvg.clientWidth;
       const height = treeSvg.clientHeight;
 
-      if (width === 0 || height === 0) return;
+      if (!width || !height) return;
 
       if (currentNodes.length === 0) {
         camera.x = width / 2;
@@ -437,6 +420,7 @@
 
       const minX = currentNodes[0].x - 30;
       const maxX = currentNodes[currentNodes.length - 1].x + 30;
+      const minY = 20;
 
       let maxY = 0;
 
@@ -444,56 +428,44 @@
         maxY = Math.max(maxY, node.y);
       }
 
-      const minY = 20;
       maxY += 30;
-
-      const contentWidth = maxX - minX;
-      const contentHeight = maxY - minY;
 
       camera.scale = Math.min(
         1,
-        Math.max(1, width - 48) / contentWidth,
-        Math.max(1, height - 48) / contentHeight
+        Math.max(1, width - 48) / (maxX - minX),
+        Math.max(1, height - 48) / (maxY - minY)
       );
 
-      camera.x =
-        width / 2 - ((minX + maxX) / 2) * camera.scale;
+      camera.x = width / 2 -
+        ((minX + maxX) / 2) * camera.scale;
 
-      camera.y =
-        height / 2 - ((minY + maxY) / 2) * camera.scale;
+      camera.y = height / 2 -
+        ((minY + maxY) / 2) * camera.scale;
 
       applyCamera();
     }
 
     function zoomAt(x, y, factor) {
-      const previousScale = camera.scale;
-
+      const oldScale = camera.scale;
       const nextScale = Math.min(
         5,
-        Math.max(0.001, previousScale * factor)
+        Math.max(0.001, oldScale * factor)
       );
 
-      // 확대 전 마우스 아래에 있던 트리 좌표
-      const worldX = (x - camera.x) / previousScale;
-      const worldY = (y - camera.y) / previousScale;
+      const worldX = (x - camera.x) / oldScale;
+      const worldY = (y - camera.y) / oldScale;
 
       camera.scale = nextScale;
-
-      // 확대 후에도 같은 좌표가 마우스 아래에 있도록 이동
       camera.x = x - worldX * nextScale;
       camera.y = y - worldY * nextScale;
 
       applyCamera();
     }
 
-    // 마우스 휠 확대·축소
     treeSvg.addEventListener("wheel", (event) => {
       event.preventDefault();
 
       const rect = treeSvg.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
       let delta = event.deltaY;
 
       if (event.deltaMode === 1) {
@@ -502,47 +474,51 @@
         delta *= treeSvg.clientHeight;
       }
 
-      // 휠 입력이 커도 한 번에 과하게 확대되지 않도록 제한
       delta = Math.max(-100, Math.min(100, delta));
-
       if (delta === 0) return;
 
       autoFit = false;
 
-      const factor = Math.exp(-delta * 0.002);
-      zoomAt(x, y, factor);
+      zoomAt(
+        event.clientX - rect.left,
+        event.clientY - rect.top,
+        Math.exp(-delta * 0.002)
+      );
     }, { passive: false });
 
-    // 좌클릭 드래그 시작
     treeSvg.addEventListener("pointerdown", (event) => {
       if (event.button !== 0 || drag !== null) return;
 
       event.preventDefault();
       treeSvg.focus({ preventScroll: true });
 
-      autoFit = false;
-
       drag = {
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
         cameraX: camera.x,
-        cameraY: camera.y
+        cameraY: camera.y,
+        moved: false
       };
 
       treeSvg.setPointerCapture(event.pointerId);
       treeSvg.classList.add("dragging");
     });
 
-    // 드래그 중 화면 이동
     treeSvg.addEventListener("pointermove", (event) => {
       if (!drag || drag.pointerId !== event.pointerId) return;
 
-      camera.x =
-        drag.cameraX + event.clientX - drag.startX;
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
 
-      camera.y =
-        drag.cameraY + event.clientY - drag.startY;
+      // 작은 손떨림은 화면 이동으로 처리하지 않습니다.
+      if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+
+      drag.moved = true;
+      autoFit = false;
+
+      camera.x = drag.cameraX + dx;
+      camera.y = drag.cameraY + dy;
 
       applyCamera();
     });
@@ -562,17 +538,37 @@
     treeSvg.addEventListener("pointercancel", endDrag);
     treeSvg.addEventListener("lostpointercapture", endDrag);
 
-    // 더블클릭하면 자동 전체 보기로 복귀
+    // 이벤트 위임: 드래그의 pointer capture와 관계없이
+    // 더블클릭한 위치에 실제 노드가 있는지 확인합니다.
     treeSvg.addEventListener("dblclick", (event) => {
       event.preventDefault();
+
+      const hit = document.elementFromPoint(
+        event.clientX,
+        event.clientY
+      );
+
+      const nodeElement = hit?.closest(".node");
+
+      if (nodeElement && viewport.contains(nodeElement)) {
+        if (!engine) return;
+
+        try {
+          const key = Number(nodeElement.dataset.key);
+          selectKey(key);
+          deleteNode(key);
+        } catch (error) {
+          showError(error);
+        }
+
+        return;
+      }
+
       autoFit = true;
       fitTree();
     });
 
-    // 키보드로도 화면 조작 가능
     treeSvg.addEventListener("keydown", (event) => {
-      const move = 40;
-
       if (event.key === "Home") {
         event.preventDefault();
         autoFit = true;
@@ -581,19 +577,17 @@
       }
 
       const moves = {
-        ArrowLeft: [move, 0],
-        ArrowRight: [-move, 0],
-        ArrowUp: [0, move],
-        ArrowDown: [0, -move]
+        ArrowLeft: [40, 0],
+        ArrowRight: [-40, 0],
+        ArrowUp: [0, 40],
+        ArrowDown: [0, -40]
       };
 
       if (moves[event.key]) {
         event.preventDefault();
         autoFit = false;
-
         camera.x += moves[event.key][0];
         camera.y += moves[event.key][1];
-
         applyCamera();
         return;
       }
@@ -611,9 +605,7 @@
     });
 
     new ResizeObserver(() => {
-      if (autoFit) {
-        fitTree();
-      }
+      if (autoFit) fitTree();
     }).observe(treeSvg);
 
     function readTree() {
@@ -632,7 +624,6 @@
 
     function renderTree() {
       const root = readTree();
-
       currentNodes = [];
       let maxDepth = 0;
 
@@ -643,10 +634,9 @@
 
         node.x = 50 + currentNodes.length * 76;
         node.y = 50 + depth * 90;
-
         currentNodes.push(node);
-        maxDepth = Math.max(maxDepth, depth);
 
+        maxDepth = Math.max(maxDepth, depth);
         layout(node.right, depth + 1);
       }
 
@@ -682,7 +672,6 @@
 
       const fragment = document.createDocumentFragment();
 
-      // 부모와 자식 연결선
       for (const node of currentNodes) {
         for (const [child, direction] of [
           [node.left, "L"],
@@ -713,16 +702,19 @@
         }
       }
 
-      // 노드 원과 키값
       for (const node of currentNodes) {
         const highlighted = node.key === lastAddedKey;
-        const group = makeSvgElement("g", {});
+
+        const group = makeSvgElement("g", {
+          class: "node",
+          "data-key": node.key
+        });
 
         group.append(
           makeSvgElement("title", {},
-            `키 ${node.key}, ` +
-            `왼쪽 ${node.left?.key ?? "없음"}, ` +
-            `오른쪽 ${node.right?.key ?? "없음"}`
+            `키 ${node.key} · 더블클릭으로 삭제\n` +
+            `왼쪽: ${node.left?.key ?? "없음"}, ` +
+            `오른쪽: ${node.right?.key ?? "없음"}`
           )
         );
 
@@ -763,7 +755,6 @@
 
     function showError(error) {
       console.error(error);
-
       message.textContent =
         "실행 중 오류가 발생했습니다. 브라우저 콘솔을 확인하세요.";
     }
@@ -773,13 +764,26 @@
 
       if (result === 1) {
         lastAddedKey = key;
-
-        slider.value = key;
-        keyValue.value = key;
-
+        selectKey(key);
         message.textContent = `${key} 노드를 추가했습니다.`;
       } else if (result === 0) {
         message.textContent = `${key} 키가 이미 존재합니다.`;
+      } else {
+        message.textContent = "키는 1~1000 사이여야 합니다.";
+      }
+
+      renderTree();
+    }
+
+    // 버튼 삭제와 노드 더블클릭 삭제가 같은 함수를 사용합니다.
+    function deleteNode(key) {
+      const result = engine.erase(key);
+
+      if (result === 1) {
+        lastAddedKey = null;
+        message.textContent = `${key} 노드를 삭제했습니다.`;
+      } else if (result === 0) {
+        message.textContent = `${key} 키가 트리에 없습니다.`;
       } else {
         message.textContent = "키는 1~1000 사이여야 합니다.";
       }
@@ -805,19 +809,7 @@
       if (!engine) return;
 
       try {
-        const key = Number(slider.value);
-        const result = engine.erase(key);
-
-        if (result === 1) {
-          lastAddedKey = null;
-          message.textContent = `${key} 노드를 삭제했습니다.`;
-        } else if (result === 0) {
-          message.textContent = `${key} 키가 트리에 없습니다.`;
-        } else {
-          message.textContent = "키는 1~1000 사이여야 합니다.";
-        }
-
-        renderTree();
+        deleteNode(Number(slider.value));
       } catch (error) {
         showError(error);
       }
@@ -856,7 +848,6 @@
       try {
         await new Promise((resolve, reject) => {
           const script = document.createElement("script");
-
           script.src = "./bst.js";
           script.onload = resolve;
           script.onerror = () =>
@@ -889,7 +880,7 @@
           "● C++ / WebAssembly 연결 완료";
 
         message.textContent =
-          "키값을 선택하거나 Add Random Node를 눌러보세요.";
+          "키를 추가해보세요. 노드를 더블클릭하면 삭제됩니다.";
       } catch (error) {
         console.error(error);
 
