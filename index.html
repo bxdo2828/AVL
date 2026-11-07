@@ -25,7 +25,7 @@
     }
 
     header {
-      padding: 28px 20px;
+      padding: 24px 20px;
       text-align: center;
     }
 
@@ -35,29 +35,101 @@
       letter-spacing: 2px;
     }
 
-    header p {
+    #engineStatus {
       margin: 10px 0 0;
       color: #888888;
-      font-size: 14px;
+      font-size: 13px;
+    }
+
+    .visualization {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     #treeArea {
-      flex: 1;
-      min-height: 220px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: 48vh;
+      min-height: 260px;
       overflow: auto;
-      padding: 24px;
+      padding: 12px;
+    }
+
+    #treeArea svg {
+      display: block;
+      margin: 0 auto;
     }
 
     .placeholder {
+      height: 100%;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: #777777;
       text-align: center;
       line-height: 1.8;
     }
 
-    /* 화면 아래 중앙에 배치 */
+    .tree-edge {
+      stroke: #555555;
+      stroke-width: 2;
+    }
+
+    .edge-label {
+      fill: #888888;
+      font: 11px monospace;
+    }
+
+    .node circle {
+      fill: #191919;
+      stroke: #79e0ad;
+      stroke-width: 2;
+    }
+
+    .node text {
+      fill: #eeeeee;
+      font: bold 14px monospace;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .node.latest circle {
+      fill: #79e0ad;
+    }
+
+    .node.latest text {
+      fill: #082015;
+    }
+
+    .inorder-panel {
+      width: min(920px, calc(100% - 32px));
+      margin: 16px auto 0;
+      padding: 14px 18px;
+      border: 1px solid #282828;
+      border-radius: 12px;
+      background: #111111;
+    }
+
+    .inorder-heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      color: #888888;
+      font-size: 12px;
+    }
+
+    #inorder {
+      margin: 0;
+      overflow-x: auto;
+      color: #b9e8ce;
+      font: 14px monospace;
+      white-space: nowrap;
+      line-height: 1.8;
+    }
+
     .controls {
       width: min(720px, calc(100% - 32px));
       margin: 24px auto;
@@ -124,15 +196,15 @@
       font: inherit;
       font-size: 14px;
       cursor: pointer;
-      transition: background 0.15s, transform 0.15s;
     }
 
     button:hover {
       background: #333333;
     }
 
-    button:active {
-      transform: translateY(1px);
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
 
     button:focus-visible,
@@ -148,7 +220,7 @@
       font-weight: bold;
     }
 
-    #addButton:hover {
+    #addButton:hover:not(:disabled) {
       background: #9cebc3;
     }
 
@@ -162,18 +234,30 @@
       color: #ebce8b;
     }
 
+    .help {
+      margin: 14px 0 0;
+      color: #777777;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
     #message {
       min-height: 42px;
-      margin: 18px 0 0;
+      margin: 16px 0 0;
       color: #aaaaaa;
       font-size: 13px;
       text-align: center;
       line-height: 1.6;
     }
 
+    #message.error {
+      color: #ffaaaa;
+    }
+
     @media (max-width: 480px) {
       header {
-        padding-top: 22px;
+        padding-top: 20px;
       }
 
       h1 {
@@ -188,12 +272,6 @@
         flex-basis: 100%;
       }
     }
-
-    @media (prefers-reduced-motion: reduce) {
-      button {
-        transition: none;
-      }
-    }
   </style>
 </head>
 
@@ -201,14 +279,22 @@
   <div class="app">
     <header>
       <h1>BST VISUALIZER</h1>
-      <p>Binary Search Tree</p>
+      <p id="engineStatus">C++ 엔진을 불러오는 중...</p>
     </header>
 
-    <main id="treeArea" aria-label="트리 시각화 영역">
-      <p class="placeholder">
-        이곳에 트리가 표시됩니다.<br>
-        현재는 C++ 엔진 연결 전입니다.
-      </p>
+    <main class="visualization">
+      <div id="treeArea" aria-label="트리 시각화 영역">
+        <p class="placeholder">잠시 기다려주세요.</p>
+      </div>
+
+      <section class="inorder-panel" aria-label="중위순회 결과">
+        <div class="inorder-heading">
+          <span>INORDER</span>
+          <span id="nodeCount">노드 0개</span>
+        </div>
+
+        <p id="inorder">트리가 비어 있습니다.</p>
+      </section>
     </main>
 
     <section class="controls" aria-label="트리 조작">
@@ -234,164 +320,28 @@
       </div>
 
       <div class="buttons">
-        <button type="button" id="addButton">
+        <button type="button" id="addButton" disabled>
           Add Node
         </button>
 
-        <button type="button" id="deleteButton">
+        <button type="button" id="deleteButton" disabled>
           Delete Node
         </button>
 
-        <button type="button" id="randomAddButton">
+        <button type="button" id="randomAddButton" disabled>
           Add Random Node
         </button>
       </div>
 
-      <p id="sliderHelp" style="
-        margin: 14px 0 0;
-        color: #777777;
-        text-align: center;
-        font-size: 12px;
-      ">
-        슬라이더 선택 후 방향키로 1씩 조절할 수 있습니다.
+      <p id="sliderHelp" class="help">
+        방향키로 키값을 1씩 조절할 수 있습니다.<br>
+        큰 트리는 트리 영역을 스크롤해서 확인하세요.
       </p>
 
       <p id="message" role="status" aria-live="polite">
-        1~1000 사이의 키값을 선택하세요.
+        C++ 엔진을 준비하고 있습니다.
       </p>
     </section>
   </div>
 
-  <script>
-    const slider = document.getElementById("keySlider");
-    const keyValue = document.getElementById("keyValue");
-    const message = document.getElementById("message");
-
-    const addButton = document.getElementById("addButton");
-    const deleteButton = document.getElementById("deleteButton");
-    const randomAddButton =
-      document.getElementById("randomAddButton");
-
-    /*
-      다음 단계에서 C++ 연결 코드로 설정할 객체입니다.
-
-      window.bstEngine = {
-        insert(key): 성공 여부를 boolean으로 반환,
-        erase(key): 성공 여부를 boolean으로 반환,
-        keys(): 현재 트리의 키 배열을 반환,
-        render(): 현재 트리를 화면에 표시
-      };
-
-      BST 삽입·삭제 알고리즘은 C++에서 실행할 예정입니다.
-    */
-
-    function getEngine() {
-      const engine = window.bstEngine;
-
-      if (!engine) {
-        message.textContent =
-          "버튼은 준비됐습니다. 실제 트리 조작은 C++ 엔진 연결 후 가능합니다.";
-        return null;
-      }
-
-      return engine;
-    }
-
-    function showError(error) {
-      console.error(error);
-
-      message.textContent =
-        "처리 중 오류가 발생했습니다. C++ 연결 상태를 확인하세요.";
-    }
-
-    // 슬라이더 변경 시 숫자 표시
-    slider.addEventListener("input", () => {
-      keyValue.value = slider.value;
-    });
-
-    // 선택한 키 삽입
-    addButton.addEventListener("click", () => {
-      const engine = getEngine();
-      if (!engine) return;
-
-      try {
-        const key = Number(slider.value);
-        const success = engine.insert(key);
-
-        engine.render();
-
-        message.textContent = success
-          ? `${key} 노드를 추가했습니다.`
-          : `${key} 노드를 추가하지 못했습니다. 중복 여부나 용량을 확인하세요.`;
-      } catch (error) {
-        showError(error);
-      }
-    });
-
-    // 선택한 키 삭제
-    deleteButton.addEventListener("click", () => {
-      const engine = getEngine();
-      if (!engine) return;
-
-      try {
-        const key = Number(slider.value);
-        const success = engine.erase(key);
-
-        engine.render();
-
-        message.textContent = success
-          ? `${key} 노드를 삭제했습니다.`
-          : `${key} 키가 트리에 없습니다.`;
-      } catch (error) {
-        showError(error);
-      }
-    });
-
-    // 1~1000 중 아직 트리에 없는 키를 무작위로 삽입
-    randomAddButton.addEventListener("click", () => {
-      const engine = getEngine();
-      if (!engine) return;
-
-      try {
-        const min = Number(slider.min);
-        const max = Number(slider.max);
-
-        const existingKeys = new Set(engine.keys());
-        const availableKeys = [];
-
-        for (let key = min; key <= max; key++) {
-          if (!existingKeys.has(key)) {
-            availableKeys.push(key);
-          }
-        }
-
-        if (availableKeys.length === 0) {
-          message.textContent =
-            "1~1000 사이의 모든 키가 이미 트리에 있습니다.";
-          return;
-        }
-
-        const index = Math.floor(
-          Math.random() * availableKeys.length
-        );
-
-        const key = availableKeys[index];
-        const success = engine.insert(key);
-
-        if (success) {
-          slider.value = key;
-          keyValue.value = key;
-        }
-
-        engine.render();
-
-        message.textContent = success
-          ? `무작위로 선택한 ${key} 노드를 추가했습니다.`
-          : `${key} 노드를 추가하지 못했습니다.`;
-      } catch (error) {
-        showError(error);
-      }
-    });
-  </script>
-</body>
-</html>
+  <!-- Emscripten으로 생성한 연결
