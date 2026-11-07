@@ -48,16 +48,31 @@
     }
 
     #treeArea {
+      position: relative;
       height: 48vh;
       min-height: 260px;
-      overflow: auto;
+      overflow: hidden;
       border: 1px solid #252525;
       border-radius: 14px;
       background: #0d0d0d;
     }
 
-    .empty {
+    #treeSvg {
+      display: block;
+      width: 100%;
       height: 100%;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+
+    #treeSvg.dragging {
+      cursor: grabbing;
+    }
+
+    #emptyMessage {
+      position: absolute;
+      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -65,16 +80,25 @@
       color: #777777;
       text-align: center;
       line-height: 1.8;
+      pointer-events: none;
     }
 
-    #treeArea svg {
-      display: block;
-      margin: 0 auto;
+    #emptyMessage[hidden] {
+      display: none;
+    }
+
+    .navigation-hint {
+      margin: 10px 0 0;
+      color: #777777;
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.6;
     }
 
     .tree-info {
       display: flex;
       justify-content: center;
+      flex-wrap: wrap;
       gap: 24px;
       margin-top: 14px;
       color: #999999;
@@ -186,7 +210,8 @@
     }
 
     button:focus-visible,
-    input:focus-visible {
+    input:focus-visible,
+    #treeSvg:focus-visible {
       outline: 2px solid #79e0ad;
       outline-offset: 4px;
     }
@@ -258,13 +283,33 @@
     </header>
 
     <main class="visualization">
-      <div id="treeArea" aria-label="트리 시각화 영역">
-        <div class="empty">C++ 엔진을 준비하고 있습니다.</div>
+      <div id="treeArea">
+        <svg
+          id="treeSvg"
+          xmlns="http://www.w3.org/2000/svg"
+          tabindex="0"
+          role="img"
+          aria-label="이진 탐색 트리"
+          aria-describedby="navigationHelp"
+        >
+          <g id="viewport"></g>
+        </svg>
+
+        <div id="emptyMessage">
+          C++ 엔진을 준비하고 있습니다.
+        </div>
       </div>
+
+      <p class="navigation-hint" id="navigationHelp">
+        휠: 확대·축소 · 좌클릭 드래그: 이동 · 더블클릭: 전체 보기
+        <br>
+        트리 영역 선택 후 방향키: 이동 · + / −: 확대·축소 · Home: 전체 보기
+      </p>
 
       <div class="tree-info">
         <span>노드 수: <strong id="nodeCount">0</strong></span>
         <span>높이: <strong id="treeHeight">0</strong></span>
+        <span>확대: <strong id="zoomValue">100%</strong></span>
       </div>
 
       <div class="inorder">
@@ -310,8 +355,7 @@
       </div>
 
       <p class="hint" id="sliderHelp">
-        방향키로 키값을 1씩 조절할 수 있습니다.
-        큰 트리는 스크롤해서 확인하세요.
+        슬라이더 선택 후 방향키로 키값을 1씩 조절할 수 있습니다.
       </p>
 
       <p id="message" role="status" aria-live="polite">
@@ -324,17 +368,32 @@
     const slider = document.getElementById("keySlider");
     const keyValue = document.getElementById("keyValue");
     const message = document.getElementById("message");
-    const treeArea = document.getElementById("treeArea");
 
     const addButton = document.getElementById("addButton");
     const deleteButton = document.getElementById("deleteButton");
     const randomAddButton =
       document.getElementById("randomAddButton");
 
-    let engine = null;
-    let lastAddedKey = null;
+    const treeSvg = document.getElementById("treeSvg");
+    const viewport = document.getElementById("viewport");
+    const emptyMessage = document.getElementById("emptyMessage");
 
     const SVG_NS = "http://www.w3.org/2000/svg";
+
+    let engine = null;
+    let lastAddedKey = null;
+    let currentNodes = [];
+
+    // 화면 이동량과 확대 배율
+    const camera = {
+      x: 0,
+      y: 0,
+      scale: 1
+    };
+
+    // 직접 이동하거나 확대하기 전까지는 트리에 자동으로 맞춥니다.
+    let autoFit = true;
+    let drag = null;
 
     function makeSvgElement(name, attributes, text) {
       const element = document.createElementNS(SVG_NS, name);
@@ -350,15 +409,219 @@
       return element;
     }
 
+    function applyCamera() {
+      viewport.setAttribute(
+        "transform",
+        `translate(${camera.x} ${camera.y}) scale(${camera.scale})`
+      );
+
+      const percent = camera.scale * 100;
+
+      document.getElementById("zoomValue").textContent =
+        `${percent < 10 ? percent.toFixed(1) : Math.round(percent)}%`;
+    }
+
+    function fitTree() {
+      const width = treeSvg.clientWidth;
+      const height = treeSvg.clientHeight;
+
+      if (width === 0 || height === 0) return;
+
+      if (currentNodes.length === 0) {
+        camera.x = width / 2;
+        camera.y = height / 2;
+        camera.scale = 1;
+        applyCamera();
+        return;
+      }
+
+      const minX = currentNodes[0].x - 30;
+      const maxX = currentNodes[currentNodes.length - 1].x + 30;
+
+      let maxY = 0;
+
+      for (const node of currentNodes) {
+        maxY = Math.max(maxY, node.y);
+      }
+
+      const minY = 20;
+      maxY += 30;
+
+      const contentWidth = maxX - minX;
+      const contentHeight = maxY - minY;
+
+      camera.scale = Math.min(
+        1,
+        Math.max(1, width - 48) / contentWidth,
+        Math.max(1, height - 48) / contentHeight
+      );
+
+      camera.x =
+        width / 2 - ((minX + maxX) / 2) * camera.scale;
+
+      camera.y =
+        height / 2 - ((minY + maxY) / 2) * camera.scale;
+
+      applyCamera();
+    }
+
+    function zoomAt(x, y, factor) {
+      const previousScale = camera.scale;
+
+      const nextScale = Math.min(
+        5,
+        Math.max(0.001, previousScale * factor)
+      );
+
+      // 확대 전 마우스 아래에 있던 트리 좌표
+      const worldX = (x - camera.x) / previousScale;
+      const worldY = (y - camera.y) / previousScale;
+
+      camera.scale = nextScale;
+
+      // 확대 후에도 같은 좌표가 마우스 아래에 있도록 이동
+      camera.x = x - worldX * nextScale;
+      camera.y = y - worldY * nextScale;
+
+      applyCamera();
+    }
+
+    // 마우스 휠 확대·축소
+    treeSvg.addEventListener("wheel", (event) => {
+      event.preventDefault();
+
+      const rect = treeSvg.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      let delta = event.deltaY;
+
+      if (event.deltaMode === 1) {
+        delta *= 16;
+      } else if (event.deltaMode === 2) {
+        delta *= treeSvg.clientHeight;
+      }
+
+      // 휠 입력이 커도 한 번에 과하게 확대되지 않도록 제한
+      delta = Math.max(-100, Math.min(100, delta));
+
+      if (delta === 0) return;
+
+      autoFit = false;
+
+      const factor = Math.exp(-delta * 0.002);
+      zoomAt(x, y, factor);
+    }, { passive: false });
+
+    // 좌클릭 드래그 시작
+    treeSvg.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || drag !== null) return;
+
+      event.preventDefault();
+      treeSvg.focus({ preventScroll: true });
+
+      autoFit = false;
+
+      drag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        cameraX: camera.x,
+        cameraY: camera.y
+      };
+
+      treeSvg.setPointerCapture(event.pointerId);
+      treeSvg.classList.add("dragging");
+    });
+
+    // 드래그 중 화면 이동
+    treeSvg.addEventListener("pointermove", (event) => {
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      camera.x =
+        drag.cameraX + event.clientX - drag.startX;
+
+      camera.y =
+        drag.cameraY + event.clientY - drag.startY;
+
+      applyCamera();
+    });
+
+    function endDrag(event) {
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      drag = null;
+      treeSvg.classList.remove("dragging");
+
+      if (treeSvg.hasPointerCapture(event.pointerId)) {
+        treeSvg.releasePointerCapture(event.pointerId);
+      }
+    }
+
+    treeSvg.addEventListener("pointerup", endDrag);
+    treeSvg.addEventListener("pointercancel", endDrag);
+    treeSvg.addEventListener("lostpointercapture", endDrag);
+
+    // 더블클릭하면 자동 전체 보기로 복귀
+    treeSvg.addEventListener("dblclick", (event) => {
+      event.preventDefault();
+      autoFit = true;
+      fitTree();
+    });
+
+    // 키보드로도 화면 조작 가능
+    treeSvg.addEventListener("keydown", (event) => {
+      const move = 40;
+
+      if (event.key === "Home") {
+        event.preventDefault();
+        autoFit = true;
+        fitTree();
+        return;
+      }
+
+      const moves = {
+        ArrowLeft: [move, 0],
+        ArrowRight: [-move, 0],
+        ArrowUp: [0, move],
+        ArrowDown: [0, -move]
+      };
+
+      if (moves[event.key]) {
+        event.preventDefault();
+        autoFit = false;
+
+        camera.x += moves[event.key][0];
+        camera.y += moves[event.key][1];
+
+        applyCamera();
+        return;
+      }
+
+      if (["+", "=", "-"].includes(event.key)) {
+        event.preventDefault();
+        autoFit = false;
+
+        zoomAt(
+          treeSvg.clientWidth / 2,
+          treeSvg.clientHeight / 2,
+          event.key === "-" ? 1 / 1.2 : 1.2
+        );
+      }
+    });
+
+    new ResizeObserver(() => {
+      if (autoFit) {
+        fitTree();
+      }
+    }).observe(treeSvg);
+
     function readTree() {
-      // C++가 제공하는 실제 노드 구조를 읽습니다.
       return JSON.parse(engine.snapshot());
     }
 
     function collectKeys(node, result = []) {
-      if (node === null) {
-        return result;
-      }
+      if (node === null) return result;
 
       collectKeys(node.left, result);
       result.push(node.key);
@@ -369,19 +632,19 @@
 
     function renderTree() {
       const root = readTree();
-      const nodes = [];
+
+      currentNodes = [];
       let maxDepth = 0;
 
-      // 중위순회 순서로 가로 위치를 정합니다.
       function layout(node, depth) {
         if (node === null) return;
 
         layout(node.left, depth + 1);
 
-        node.x = 50 + nodes.length * 76;
+        node.x = 50 + currentNodes.length * 76;
         node.y = 50 + depth * 90;
 
-        nodes.push(node);
+        currentNodes.push(node);
         maxDepth = Math.max(maxDepth, depth);
 
         layout(node.right, depth + 1);
@@ -390,47 +653,44 @@
       layout(root, 0);
 
       document.getElementById("nodeCount").textContent =
-        nodes.length;
+        currentNodes.length;
 
       document.getElementById("treeHeight").textContent =
         maxDepth;
 
       document.getElementById("inorderValue").textContent =
-        nodes.length
-          ? nodes.map(node => node.key).join(" → ")
+        currentNodes.length
+          ? currentNodes.map(node => node.key).join(" → ")
           : "비어 있음";
 
-      treeArea.replaceChildren();
+      treeSvg.setAttribute(
+        "aria-label",
+        `이진 탐색 트리, 노드 ${currentNodes.length}개`
+      );
+
+      viewport.replaceChildren();
+      emptyMessage.hidden = root !== null;
 
       if (root === null) {
-        const empty = document.createElement("div");
-        empty.className = "empty";
-        empty.textContent =
+        emptyMessage.textContent =
           "트리가 비어 있습니다. Add Node로 첫 노드를 추가하세요.";
-        treeArea.append(empty);
+
+        autoFit = true;
+        fitTree();
         return;
       }
 
-      const width = Math.max(600, nodes.length * 76 + 24);
-      const height = Math.max(260, maxDepth * 90 + 100);
+      const fragment = document.createDocumentFragment();
 
-      const svg = makeSvgElement("svg", {
-        width,
-        height,
-        viewBox: `0 0 ${width} ${height}`,
-        role: "img",
-        "aria-label": `이진 탐색 트리, 노드 ${nodes.length}개`
-      });
-
-      // 연결선을 먼저 그립니다.
-      for (const node of nodes) {
+      // 부모와 자식 연결선
+      for (const node of currentNodes) {
         for (const [child, direction] of [
           [node.left, "L"],
           [node.right, "R"]
         ]) {
           if (child === null) continue;
 
-          svg.append(
+          fragment.append(
             makeSvgElement("line", {
               x1: node.x,
               y1: node.y,
@@ -441,7 +701,7 @@
             })
           );
 
-          svg.append(
+          fragment.append(
             makeSvgElement("text", {
               x: (node.x + child.x) / 2 + 8,
               y: (node.y + child.y) / 2 - 6,
@@ -453,8 +713,8 @@
         }
       }
 
-      // 연결선 위에 노드를 그립니다.
-      for (const node of nodes) {
+      // 노드 원과 키값
+      for (const node of currentNodes) {
         const highlighted = node.key === lastAddedKey;
         const group = makeSvgElement("g", {});
 
@@ -489,14 +749,21 @@
           }, node.key)
         );
 
-        svg.append(group);
+        fragment.append(group);
       }
 
-      treeArea.append(svg);
+      viewport.append(fragment);
+
+      if (autoFit) {
+        fitTree();
+      } else {
+        applyCamera();
+      }
     }
 
     function showError(error) {
       console.error(error);
+
       message.textContent =
         "실행 중 오류가 발생했습니다. 브라우저 콘솔을 확인하세요.";
     }
@@ -506,8 +773,10 @@
 
       if (result === 1) {
         lastAddedKey = key;
+
         slider.value = key;
         keyValue.value = key;
+
         message.textContent = `${key} 노드를 추가했습니다.`;
       } else if (result === 0) {
         message.textContent = `${key} 키가 이미 존재합니다.`;
@@ -585,13 +854,14 @@
 
     async function initialize() {
       try {
-        // HTML과 같은 폴더의 빌드 결과를 불러옵니다.
         await new Promise((resolve, reject) => {
           const script = document.createElement("script");
+
           script.src = "./bst.js";
           script.onload = resolve;
           script.onerror = () =>
             reject(new Error("bst.js를 불러오지 못했습니다."));
+
           document.head.append(script);
         });
 
@@ -629,12 +899,9 @@
         message.textContent =
           "같은 폴더에 bst.js와 bst.wasm이 있는지 확인하세요.";
 
-        treeArea.replaceChildren();
-
-        const empty = document.createElement("div");
-        empty.className = "empty";
-        empty.textContent = "C++ 엔진을 불러오지 못했습니다.";
-        treeArea.append(empty);
+        emptyMessage.hidden = false;
+        emptyMessage.textContent =
+          "C++ 엔진을 불러오지 못했습니다.";
       }
     }
 
