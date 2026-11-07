@@ -41,7 +41,6 @@
       font-size: 14px;
     }
 
-    /* 나중에 이 영역에 트리를 그릴 예정 */
     #treeArea {
       flex: 1;
       min-height: 220px;
@@ -53,12 +52,12 @@
     }
 
     .placeholder {
-      color: #666666;
+      color: #777777;
       text-align: center;
       line-height: 1.8;
     }
 
-    /* 화면 아래 중앙의 조작 영역 */
+    /* 화면 아래 중앙에 배치 */
     .controls {
       width: min(720px, calc(100% - 32px));
       margin: 24px auto;
@@ -82,7 +81,7 @@
     }
 
     #keyValue {
-      min-width: 65px;
+      min-width: 76px;
       padding: 8px 12px;
       border-radius: 8px;
       background: #242424;
@@ -158,13 +157,13 @@
       color: #ffaaaa;
     }
 
-    #randomDeleteButton {
+    #randomAddButton {
       border-color: #71613c;
       color: #ebce8b;
     }
 
     #message {
-      min-height: 40px;
+      min-height: 42px;
       margin: 18px 0 0;
       color: #aaaaaa;
       font-size: 13px;
@@ -221,16 +220,17 @@
       <input
         id="keySlider"
         type="range"
-        min="-100"
-        max="100"
+        min="1"
+        max="1000"
         step="1"
         value="30"
+        aria-describedby="sliderHelp"
       >
 
       <div class="range-labels" aria-hidden="true">
-        <span>−100</span>
-        <span>0</span>
-        <span>100</span>
+        <span>1</span>
+        <span>500</span>
+        <span>1000</span>
       </div>
 
       <div class="buttons">
@@ -242,13 +242,22 @@
           Delete Node
         </button>
 
-        <button type="button" id="randomDeleteButton">
-          Delete Random Node
+        <button type="button" id="randomAddButton">
+          Add Random Node
         </button>
       </div>
 
+      <p id="sliderHelp" style="
+        margin: 14px 0 0;
+        color: #777777;
+        text-align: center;
+        font-size: 12px;
+      ">
+        슬라이더 선택 후 방향키로 1씩 조절할 수 있습니다.
+      </p>
+
       <p id="message" role="status" aria-live="polite">
-        슬라이더로 키값을 선택하세요.
+        1~1000 사이의 키값을 선택하세요.
       </p>
     </section>
   </div>
@@ -260,20 +269,20 @@
 
     const addButton = document.getElementById("addButton");
     const deleteButton = document.getElementById("deleteButton");
-    const randomDeleteButton =
-      document.getElementById("randomDeleteButton");
+    const randomAddButton =
+      document.getElementById("randomAddButton");
 
     /*
-      다음 단계에서 C++ 연결 코드를 통해 설정할 객체입니다.
+      다음 단계에서 C++ 연결 코드로 설정할 객체입니다.
 
       window.bstEngine = {
         insert(key): 성공 여부를 boolean으로 반환,
         erase(key): 성공 여부를 boolean으로 반환,
-        keys(): 현재 트리에 있는 키 배열을 반환,
+        keys(): 현재 트리의 키 배열을 반환,
         render(): 현재 트리를 화면에 표시
       };
 
-      이 HTML에서는 BST 알고리즘을 별도로 구현하지 않습니다.
+      BST 삽입·삭제 알고리즘은 C++에서 실행할 예정입니다.
     */
 
     function getEngine() {
@@ -290,15 +299,17 @@
 
     function showError(error) {
       console.error(error);
+
       message.textContent =
         "처리 중 오류가 발생했습니다. C++ 연결 상태를 확인하세요.";
     }
 
-    // 슬라이더를 움직이면 선택한 숫자만 변경합니다.
+    // 슬라이더 변경 시 숫자 표시
     slider.addEventListener("input", () => {
       keyValue.value = slider.value;
     });
 
+    // 선택한 키 삽입
     addButton.addEventListener("click", () => {
       const engine = getEngine();
       if (!engine) return;
@@ -317,6 +328,7 @@
       }
     });
 
+    // 선택한 키 삭제
     deleteButton.addEventListener("click", () => {
       const engine = getEngine();
       if (!engine) return;
@@ -335,29 +347,47 @@
       }
     });
 
-    randomDeleteButton.addEventListener("click", () => {
+    // 1~1000 중 아직 트리에 없는 키를 무작위로 삽입
+    randomAddButton.addEventListener("click", () => {
       const engine = getEngine();
       if (!engine) return;
 
       try {
-        // 숫자 범위 전체가 아니라 실제 존재하는 키 중에서 선택합니다.
-        const keys = engine.keys();
+        const min = Number(slider.min);
+        const max = Number(slider.max);
 
-        if (keys.length === 0) {
+        const existingKeys = new Set(engine.keys());
+        const availableKeys = [];
+
+        for (let key = min; key <= max; key++) {
+          if (!existingKeys.has(key)) {
+            availableKeys.push(key);
+          }
+        }
+
+        if (availableKeys.length === 0) {
           message.textContent =
-            "트리가 비어 있어 삭제할 노드가 없습니다.";
+            "1~1000 사이의 모든 키가 이미 트리에 있습니다.";
           return;
         }
 
-        const index = Math.floor(Math.random() * keys.length);
-        const key = keys[index];
-        const success = engine.erase(key);
+        const index = Math.floor(
+          Math.random() * availableKeys.length
+        );
+
+        const key = availableKeys[index];
+        const success = engine.insert(key);
+
+        if (success) {
+          slider.value = key;
+          keyValue.value = key;
+        }
 
         engine.render();
 
         message.textContent = success
-          ? `무작위로 선택한 ${key} 노드를 삭제했습니다.`
-          : `${key} 노드를 삭제하지 못했습니다.`;
+          ? `무작위로 선택한 ${key} 노드를 추가했습니다.`
+          : `${key} 노드를 추가하지 못했습니다.`;
       } catch (error) {
         showError(error);
       }
