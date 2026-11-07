@@ -2,21 +2,366 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>BST 시각화</title>
-</head>
-  <script>
-  const slider = document.getElementById("keySlider");
-  const keyValue = document.getElementById("keyValue");
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BST Visualizer</title>
 
-  slider.addEventListener("input", () => {
-    keyValue.value = slider.value;
-  });
-</script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #080808;
+      color: #eeeeee;
+      font-family: Arial, sans-serif;
+    }
+
+    .app {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 28px 20px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: 2px;
+    }
+
+    header p {
+      margin: 10px 0 0;
+      color: #888888;
+      font-size: 14px;
+    }
+
+    /* 나중에 이 영역에 트리를 그릴 예정 */
+    #treeArea {
+      flex: 1;
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      padding: 24px;
+    }
+
+    .placeholder {
+      color: #666666;
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    /* 화면 아래 중앙의 조작 영역 */
+    .controls {
+      width: min(720px, calc(100% - 32px));
+      margin: 24px auto;
+      padding: 24px;
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
+      border: 1px solid #303030;
+      border-radius: 18px;
+      background: #151515;
+    }
+
+    .slider-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .slider-heading label {
+      color: #bbbbbb;
+      font-size: 14px;
+    }
+
+    #keyValue {
+      min-width: 65px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #242424;
+      color: #79e0ad;
+      text-align: center;
+      font: bold 24px monospace;
+    }
+
+    #keySlider {
+      width: 100%;
+      margin: 0;
+      accent-color: #79e0ad;
+      cursor: pointer;
+    }
+
+    .range-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      color: #777777;
+      font-size: 12px;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    button {
+      flex: 1 1 160px;
+      min-height: 46px;
+      padding: 12px 16px;
+      border: 1px solid #414141;
+      border-radius: 9px;
+      background: #242424;
+      color: #eeeeee;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    button:hover {
+      background: #333333;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 2px solid #79e0ad;
+      outline-offset: 4px;
+    }
+
+    #addButton {
+      border-color: #79e0ad;
+      background: #79e0ad;
+      color: #082015;
+      font-weight: bold;
+    }
+
+    #addButton:hover {
+      background: #9cebc3;
+    }
+
+    #deleteButton {
+      border-color: #794747;
+      color: #ffaaaa;
+    }
+
+    #randomDeleteButton {
+      border-color: #71613c;
+      color: #ebce8b;
+    }
+
+    #message {
+      min-height: 40px;
+      margin: 18px 0 0;
+      color: #aaaaaa;
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 480px) {
+      header {
+        padding-top: 22px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      .controls {
+        padding: 18px;
+      }
+
+      button {
+        flex-basis: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      button {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+
 <body>
-  <h1>BST 시각화</h1>
-  <input id="keySlider" type="range" min="-100" max="100" value="30">
-<output id="keyValue" for="keySlider">30</output>
-  <button>Add Node</button>
-  <button>Delete Node</button>
+  <div class="app">
+    <header>
+      <h1>BST VISUALIZER</h1>
+      <p>Binary Search Tree</p>
+    </header>
+
+    <main id="treeArea" aria-label="트리 시각화 영역">
+      <p class="placeholder">
+        이곳에 트리가 표시됩니다.<br>
+        현재는 C++ 엔진 연결 전입니다.
+      </p>
+    </main>
+
+    <section class="controls" aria-label="트리 조작">
+      <div class="slider-heading">
+        <label for="keySlider">KEY VALUE</label>
+        <output id="keyValue" for="keySlider">30</output>
+      </div>
+
+      <input
+        id="keySlider"
+        type="range"
+        min="-100"
+        max="100"
+        step="1"
+        value="30"
+      >
+
+      <div class="range-labels" aria-hidden="true">
+        <span>−100</span>
+        <span>0</span>
+        <span>100</span>
+      </div>
+
+      <div class="buttons">
+        <button type="button" id="addButton">
+          Add Node
+        </button>
+
+        <button type="button" id="deleteButton">
+          Delete Node
+        </button>
+
+        <button type="button" id="randomDeleteButton">
+          Delete Random Node
+        </button>
+      </div>
+
+      <p id="message" role="status" aria-live="polite">
+        슬라이더로 키값을 선택하세요.
+      </p>
+    </section>
+  </div>
+
+  <script>
+    const slider = document.getElementById("keySlider");
+    const keyValue = document.getElementById("keyValue");
+    const message = document.getElementById("message");
+
+    const addButton = document.getElementById("addButton");
+    const deleteButton = document.getElementById("deleteButton");
+    const randomDeleteButton =
+      document.getElementById("randomDeleteButton");
+
+    /*
+      다음 단계에서 C++ 연결 코드를 통해 설정할 객체입니다.
+
+      window.bstEngine = {
+        insert(key): 성공 여부를 boolean으로 반환,
+        erase(key): 성공 여부를 boolean으로 반환,
+        keys(): 현재 트리에 있는 키 배열을 반환,
+        render(): 현재 트리를 화면에 표시
+      };
+
+      이 HTML에서는 BST 알고리즘을 별도로 구현하지 않습니다.
+    */
+
+    function getEngine() {
+      const engine = window.bstEngine;
+
+      if (!engine) {
+        message.textContent =
+          "버튼은 준비됐습니다. 실제 트리 조작은 C++ 엔진 연결 후 가능합니다.";
+        return null;
+      }
+
+      return engine;
+    }
+
+    function showError(error) {
+      console.error(error);
+      message.textContent =
+        "처리 중 오류가 발생했습니다. C++ 연결 상태를 확인하세요.";
+    }
+
+    // 슬라이더를 움직이면 선택한 숫자만 변경합니다.
+    slider.addEventListener("input", () => {
+      keyValue.value = slider.value;
+    });
+
+    addButton.addEventListener("click", () => {
+      const engine = getEngine();
+      if (!engine) return;
+
+      try {
+        const key = Number(slider.value);
+        const success = engine.insert(key);
+
+        engine.render();
+
+        message.textContent = success
+          ? `${key} 노드를 추가했습니다.`
+          : `${key} 노드를 추가하지 못했습니다. 중복 여부나 용량을 확인하세요.`;
+      } catch (error) {
+        showError(error);
+      }
+    });
+
+    deleteButton.addEventListener("click", () => {
+      const engine = getEngine();
+      if (!engine) return;
+
+      try {
+        const key = Number(slider.value);
+        const success = engine.erase(key);
+
+        engine.render();
+
+        message.textContent = success
+          ? `${key} 노드를 삭제했습니다.`
+          : `${key} 키가 트리에 없습니다.`;
+      } catch (error) {
+        showError(error);
+      }
+    });
+
+    randomDeleteButton.addEventListener("click", () => {
+      const engine = getEngine();
+      if (!engine) return;
+
+      try {
+        // 숫자 범위 전체가 아니라 실제 존재하는 키 중에서 선택합니다.
+        const keys = engine.keys();
+
+        if (keys.length === 0) {
+          message.textContent =
+            "트리가 비어 있어 삭제할 노드가 없습니다.";
+          return;
+        }
+
+        const index = Math.floor(Math.random() * keys.length);
+        const key = keys[index];
+        const success = engine.erase(key);
+
+        engine.render();
+
+        message.textContent = success
+          ? `무작위로 선택한 ${key} 노드를 삭제했습니다.`
+          : `${key} 노드를 삭제하지 못했습니다.`;
+      } catch (error) {
+        showError(error);
+      }
+    });
+  </script>
 </body>
 </html>
