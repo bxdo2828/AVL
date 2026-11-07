@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <title>BST 시각화</title>
 </head>
+  <script>
+  const slider = document.getElementById("keySlider");
+  const keyValue = document.getElementById("keyValue");
+
+  slider.addEventListener("input", () => {
+    keyValue.value = slider.value;
+  });
+</script>
 <body>
   <h1>BST 시각화</h1>
   <input id="keySlider" type="range" min="-100" max="100" value="30">
