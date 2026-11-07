@@ -31,29 +31,40 @@
 
     h1 {
       margin: 0;
-      font-size: 26px;
+      font-size: 25px;
       letter-spacing: 2px;
     }
 
     #engineStatus {
-      margin: 10px 0 0;
-      color: #888888;
-      font-size: 13px;
+      margin-top: 10px;
+      color: #999999;
+      font-size: 12px;
     }
 
     .visualization {
       flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+      width: 100%;
+      padding: 0 20px;
     }
 
     #treeArea {
       height: 48vh;
       min-height: 260px;
       overflow: auto;
-      padding: 12px;
+      border: 1px solid #252525;
+      border-radius: 14px;
+      background: #0d0d0d;
+    }
+
+    .empty {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #777777;
+      text-align: center;
+      line-height: 1.8;
     }
 
     #treeArea svg {
@@ -61,73 +72,40 @@
       margin: 0 auto;
     }
 
-    .placeholder {
-      height: 100%;
-      margin: 0;
+    .tree-info {
       display: flex;
-      align-items: center;
       justify-content: center;
-      color: #777777;
-      text-align: center;
+      gap: 24px;
+      margin-top: 14px;
+      color: #999999;
+      font-size: 13px;
+    }
+
+    .tree-info strong {
+      color: #79e0ad;
+    }
+
+    .inorder {
+      max-width: 900px;
+      margin: 18px auto 0;
+      padding: 14px;
+      border: 1px solid #252525;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    .inorder-label {
+      margin-bottom: 8px;
+      color: #999999;
+    }
+
+    #inorderValue {
+      max-height: 80px;
+      overflow: auto;
+      color: #cccccc;
+      font-family: monospace;
       line-height: 1.8;
-    }
-
-    .tree-edge {
-      stroke: #555555;
-      stroke-width: 2;
-    }
-
-    .edge-label {
-      fill: #888888;
-      font: 11px monospace;
-    }
-
-    .node circle {
-      fill: #191919;
-      stroke: #79e0ad;
-      stroke-width: 2;
-    }
-
-    .node text {
-      fill: #eeeeee;
-      font: bold 14px monospace;
-      text-anchor: middle;
-      dominant-baseline: middle;
-    }
-
-    .node.latest circle {
-      fill: #79e0ad;
-    }
-
-    .node.latest text {
-      fill: #082015;
-    }
-
-    .inorder-panel {
-      width: min(920px, calc(100% - 32px));
-      margin: 16px auto 0;
-      padding: 14px 18px;
-      border: 1px solid #282828;
-      border-radius: 12px;
-      background: #111111;
-    }
-
-    .inorder-heading {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
-      color: #888888;
-      font-size: 12px;
-    }
-
-    #inorder {
-      margin: 0;
-      overflow-x: auto;
-      color: #b9e8ce;
-      font: 14px monospace;
-      white-space: nowrap;
-      line-height: 1.8;
+      overflow-wrap: anywhere;
     }
 
     .controls {
@@ -204,7 +182,7 @@
 
     button:disabled {
       opacity: 0.4;
-      cursor: not-allowed;
+      cursor: wait;
     }
 
     button:focus-visible,
@@ -220,7 +198,7 @@
       font-weight: bold;
     }
 
-    #addButton:hover:not(:disabled) {
+    #addButton:hover {
       background: #9cebc3;
     }
 
@@ -234,34 +212,29 @@
       color: #ebce8b;
     }
 
-    .help {
+    .hint {
       margin: 14px 0 0;
       color: #777777;
       text-align: center;
       font-size: 12px;
-      line-height: 1.6;
     }
 
     #message {
       min-height: 42px;
-      margin: 16px 0 0;
+      margin: 18px 0 0;
       color: #aaaaaa;
       font-size: 13px;
       text-align: center;
       line-height: 1.6;
     }
 
-    #message.error {
-      color: #ffaaaa;
-    }
-
     @media (max-width: 480px) {
-      header {
-        padding-top: 20px;
-      }
-
       h1 {
         font-size: 22px;
+      }
+
+      .visualization {
+        padding: 0 12px;
       }
 
       .controls {
@@ -279,22 +252,25 @@
   <div class="app">
     <header>
       <h1>BST VISUALIZER</h1>
-      <p id="engineStatus">C++ 엔진을 불러오는 중...</p>
+      <div id="engineStatus" role="status">
+        C++ 엔진 로딩 중…
+      </div>
     </header>
 
     <main class="visualization">
       <div id="treeArea" aria-label="트리 시각화 영역">
-        <p class="placeholder">잠시 기다려주세요.</p>
+        <div class="empty">C++ 엔진을 준비하고 있습니다.</div>
       </div>
 
-      <section class="inorder-panel" aria-label="중위순회 결과">
-        <div class="inorder-heading">
-          <span>INORDER</span>
-          <span id="nodeCount">노드 0개</span>
-        </div>
+      <div class="tree-info">
+        <span>노드 수: <strong id="nodeCount">0</strong></span>
+        <span>높이: <strong id="treeHeight">0</strong></span>
+      </div>
 
-        <p id="inorder">트리가 비어 있습니다.</p>
-      </section>
+      <div class="inorder">
+        <div class="inorder-label">INORDER · 중위순회</div>
+        <div id="inorderValue" aria-live="polite">비어 있음</div>
+      </div>
     </main>
 
     <section class="controls" aria-label="트리 조작">
@@ -333,15 +309,336 @@
         </button>
       </div>
 
-      <p id="sliderHelp" class="help">
-        방향키로 키값을 1씩 조절할 수 있습니다.<br>
-        큰 트리는 트리 영역을 스크롤해서 확인하세요.
+      <p class="hint" id="sliderHelp">
+        방향키로 키값을 1씩 조절할 수 있습니다.
+        큰 트리는 스크롤해서 확인하세요.
       </p>
 
       <p id="message" role="status" aria-live="polite">
-        C++ 엔진을 준비하고 있습니다.
+        C++ 엔진을 불러오고 있습니다.
       </p>
     </section>
   </div>
 
-  <!-- Emscripten으로 생성한 연결
+  <script>
+    const slider = document.getElementById("keySlider");
+    const keyValue = document.getElementById("keyValue");
+    const message = document.getElementById("message");
+    const treeArea = document.getElementById("treeArea");
+
+    const addButton = document.getElementById("addButton");
+    const deleteButton = document.getElementById("deleteButton");
+    const randomAddButton =
+      document.getElementById("randomAddButton");
+
+    let engine = null;
+    let lastAddedKey = null;
+
+    const SVG_NS = "http://www.w3.org/2000/svg";
+
+    function makeSvgElement(name, attributes, text) {
+      const element = document.createElementNS(SVG_NS, name);
+
+      for (const [key, value] of Object.entries(attributes)) {
+        element.setAttribute(key, value);
+      }
+
+      if (text !== undefined) {
+        element.textContent = text;
+      }
+
+      return element;
+    }
+
+    function readTree() {
+      // C++가 제공하는 실제 노드 구조를 읽습니다.
+      return JSON.parse(engine.snapshot());
+    }
+
+    function collectKeys(node, result = []) {
+      if (node === null) {
+        return result;
+      }
+
+      collectKeys(node.left, result);
+      result.push(node.key);
+      collectKeys(node.right, result);
+
+      return result;
+    }
+
+    function renderTree() {
+      const root = readTree();
+      const nodes = [];
+      let maxDepth = 0;
+
+      // 중위순회 순서로 가로 위치를 정합니다.
+      function layout(node, depth) {
+        if (node === null) return;
+
+        layout(node.left, depth + 1);
+
+        node.x = 50 + nodes.length * 76;
+        node.y = 50 + depth * 90;
+
+        nodes.push(node);
+        maxDepth = Math.max(maxDepth, depth);
+
+        layout(node.right, depth + 1);
+      }
+
+      layout(root, 0);
+
+      document.getElementById("nodeCount").textContent =
+        nodes.length;
+
+      document.getElementById("treeHeight").textContent =
+        maxDepth;
+
+      document.getElementById("inorderValue").textContent =
+        nodes.length
+          ? nodes.map(node => node.key).join(" → ")
+          : "비어 있음";
+
+      treeArea.replaceChildren();
+
+      if (root === null) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent =
+          "트리가 비어 있습니다. Add Node로 첫 노드를 추가하세요.";
+        treeArea.append(empty);
+        return;
+      }
+
+      const width = Math.max(600, nodes.length * 76 + 24);
+      const height = Math.max(260, maxDepth * 90 + 100);
+
+      const svg = makeSvgElement("svg", {
+        width,
+        height,
+        viewBox: `0 0 ${width} ${height}`,
+        role: "img",
+        "aria-label": `이진 탐색 트리, 노드 ${nodes.length}개`
+      });
+
+      // 연결선을 먼저 그립니다.
+      for (const node of nodes) {
+        for (const [child, direction] of [
+          [node.left, "L"],
+          [node.right, "R"]
+        ]) {
+          if (child === null) continue;
+
+          svg.append(
+            makeSvgElement("line", {
+              x1: node.x,
+              y1: node.y,
+              x2: child.x,
+              y2: child.y,
+              stroke: "#555555",
+              "stroke-width": 2
+            })
+          );
+
+          svg.append(
+            makeSvgElement("text", {
+              x: (node.x + child.x) / 2 + 8,
+              y: (node.y + child.y) / 2 - 6,
+              fill: "#999999",
+              "font-size": 11,
+              "font-family": "monospace"
+            }, direction)
+          );
+        }
+      }
+
+      // 연결선 위에 노드를 그립니다.
+      for (const node of nodes) {
+        const highlighted = node.key === lastAddedKey;
+        const group = makeSvgElement("g", {});
+
+        group.append(
+          makeSvgElement("title", {},
+            `키 ${node.key}, ` +
+            `왼쪽 ${node.left?.key ?? "없음"}, ` +
+            `오른쪽 ${node.right?.key ?? "없음"}`
+          )
+        );
+
+        group.append(
+          makeSvgElement("circle", {
+            cx: node.x,
+            cy: node.y,
+            r: 25,
+            fill: highlighted ? "#79e0ad" : "#191919",
+            stroke: highlighted ? "#79e0ad" : "#777777",
+            "stroke-width": 2
+          })
+        );
+
+        group.append(
+          makeSvgElement("text", {
+            x: node.x,
+            y: node.y,
+            fill: highlighted ? "#082015" : "#eeeeee",
+            "font-size": 14,
+            "font-family": "monospace",
+            "text-anchor": "middle",
+            "dominant-baseline": "middle"
+          }, node.key)
+        );
+
+        svg.append(group);
+      }
+
+      treeArea.append(svg);
+    }
+
+    function showError(error) {
+      console.error(error);
+      message.textContent =
+        "실행 중 오류가 발생했습니다. 브라우저 콘솔을 확인하세요.";
+    }
+
+    function addNode(key) {
+      const result = engine.insert(key);
+
+      if (result === 1) {
+        lastAddedKey = key;
+        slider.value = key;
+        keyValue.value = key;
+        message.textContent = `${key} 노드를 추가했습니다.`;
+      } else if (result === 0) {
+        message.textContent = `${key} 키가 이미 존재합니다.`;
+      } else {
+        message.textContent = "키는 1~1000 사이여야 합니다.";
+      }
+
+      renderTree();
+    }
+
+    slider.addEventListener("input", () => {
+      keyValue.value = slider.value;
+    });
+
+    addButton.addEventListener("click", () => {
+      if (!engine) return;
+
+      try {
+        addNode(Number(slider.value));
+      } catch (error) {
+        showError(error);
+      }
+    });
+
+    deleteButton.addEventListener("click", () => {
+      if (!engine) return;
+
+      try {
+        const key = Number(slider.value);
+        const result = engine.erase(key);
+
+        if (result === 1) {
+          lastAddedKey = null;
+          message.textContent = `${key} 노드를 삭제했습니다.`;
+        } else if (result === 0) {
+          message.textContent = `${key} 키가 트리에 없습니다.`;
+        } else {
+          message.textContent = "키는 1~1000 사이여야 합니다.";
+        }
+
+        renderTree();
+      } catch (error) {
+        showError(error);
+      }
+    });
+
+    randomAddButton.addEventListener("click", () => {
+      if (!engine) return;
+
+      try {
+        const existingKeys = new Set(collectKeys(readTree()));
+        const availableKeys = [];
+
+        for (let key = 1; key <= 1000; key++) {
+          if (!existingKeys.has(key)) {
+            availableKeys.push(key);
+          }
+        }
+
+        if (availableKeys.length === 0) {
+          message.textContent =
+            "1~1000 사이의 모든 키가 이미 존재합니다.";
+          return;
+        }
+
+        const index = Math.floor(
+          Math.random() * availableKeys.length
+        );
+
+        addNode(availableKeys[index]);
+      } catch (error) {
+        showError(error);
+      }
+    });
+
+    async function initialize() {
+      try {
+        // HTML과 같은 폴더의 빌드 결과를 불러옵니다.
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "./bst.js";
+          script.onload = resolve;
+          script.onerror = () =>
+            reject(new Error("bst.js를 불러오지 못했습니다."));
+          document.head.append(script);
+        });
+
+        const module = await createBSTModule();
+
+        engine = {
+          insert: module.cwrap(
+            "bst_insert", "number", ["number"]
+          ),
+          erase: module.cwrap(
+            "bst_erase", "number", ["number"]
+          ),
+          snapshot: module.cwrap(
+            "bst_snapshot", "string", []
+          )
+        };
+
+        renderTree();
+
+        addButton.disabled = false;
+        deleteButton.disabled = false;
+        randomAddButton.disabled = false;
+
+        document.getElementById("engineStatus").textContent =
+          "● C++ / WebAssembly 연결 완료";
+
+        message.textContent =
+          "키값을 선택하거나 Add Random Node를 눌러보세요.";
+      } catch (error) {
+        console.error(error);
+
+        document.getElementById("engineStatus").textContent =
+          "C++ 엔진 연결 실패";
+
+        message.textContent =
+          "같은 폴더에 bst.js와 bst.wasm이 있는지 확인하세요.";
+
+        treeArea.replaceChildren();
+
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "C++ 엔진을 불러오지 못했습니다.";
+        treeArea.append(empty);
+      }
+    }
+
+    initialize();
+  </script>
+</body>
+</html>
