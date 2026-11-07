@@ -2,46 +2,12 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BST 시각화</title>
 </head>
 <body>
   <h1>BST 시각화</h1>
-
-  <label for="keySlider">키값 선택:</label>
-  <input
-    type="range"
-    id="keySlider"
-    min="-100"
-    max="100"
-    step="1"
-    value="30"
-  >
-  <output id="keyValue" for="keySlider">30</output>
-
-  <button type="button" id="addButton">Add Node</button>
-  <button type="button" id="deleteButton">Delete Node</button>
-
-  <p id="message">키값을 선택하세요.</p>
-
-  <script>
-    const slider = document.getElementById("keySlider");
-    const keyValue = document.getElementById("keyValue");
-    const message = document.getElementById("message");
-
-    // 슬라이더를 움직이면 선택한 숫자를 표시
-    slider.addEventListener("input", () => {
-      keyValue.value = slider.value;
-    });
-
-    // 지금은 버튼 동작을 확인하기 위한 메시지만 표시
-    document.getElementById("addButton").addEventListener("click", () => {
-      message.textContent = `${slider.value} 삽입 버튼을 눌렀습니다.`;
-    });
-
-    document.getElementById("deleteButton").addEventListener("click", () => {
-      message.textContent = `${slider.value} 삭제 버튼을 눌렀습니다.`;
-    });
-  </script>
+  <input type="range" min="-100" max="100" value="30">
+  <button>Add Node</button>
+  <button>Delete Node</button>
 </body>
 </html>
